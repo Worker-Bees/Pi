@@ -9,11 +9,11 @@ import time
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 2711)
+server_address = ('192.168.1.3', 2711)
 def test_openCV():
     cap = cv.VideoCapture(0)
-    cap.set(3, 480)
-    cap.set(4, 360)
+    # cap.set(3, 480)
+    # cap.set(4, 360)
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
@@ -49,8 +49,6 @@ def test_openCV():
     cv.destroyAllWindows()
 
 def main():
-    print("Hello World!")
-    print("Hello World!")
     test_openCV()
 
 if __name__ == "__main__":
