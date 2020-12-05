@@ -1,16 +1,22 @@
 import numpy as np
 import cv2 as cv
 import os
-import socketio
 import socket
 import base64
-import time
+import threading
 
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('192.168.1.3', 2711)
+server_address = ('localhost', 2711)
+
+# Create new socket to listen to key press from JavaFX
+sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_address2 = ('localhost', 2345)
 def test_openCV():
+    # Bind socket2 to server
+    sock2.bind(server_address2)
+
     cap = cv.VideoCapture(0)
     # cap.set(3, 480)
     # cap.set(4, 360)
@@ -44,12 +50,32 @@ def test_openCV():
         # cv.imshow('frame', grayImage)
         # i = i + 1
         # if i == 100: break
+
     # When everything done, release the capture
     cap.release()
     cv.destroyAllWindows()
 
+
+class MyThread (threading.Thread):
+    def __init__(self, thread_id, name):
+        threading.Thread.__init__(self)
+        self.thread_id = thread_id
+        self.name = name
+
+    def run(self):
+        print("Starting " + self.name)
+        # Listen for key press
+        while True:
+            data, address = sock2.recvfrom(1024)
+            print("hello = ", data.decode())
+
+
 def main():
+    thread1 = MyThread(1, "Thread-1")
+    thread1.start()
+
     test_openCV()
+
 
 if __name__ == "__main__":
     main()
