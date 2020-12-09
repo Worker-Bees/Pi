@@ -4,6 +4,7 @@ import os
 import socket
 import base64
 import threading
+import ObjectDetection
 
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
@@ -33,7 +34,8 @@ def test_openCV():
             break
         if cv.waitKey(1) == ord('q'):
             break
-        grayImage = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        frame_contours = ObjectDetection.getContours(frame)
+        grayImage = cv.cvtColor(frame_contours, cv.COLOR_BGR2GRAY)
         reval, buffer = cv.imencode('.jpeg', grayImage)
         encoded_string = base64.b64encode(buffer)
         # image = encoded_string.decode('utf-8')
@@ -73,7 +75,7 @@ class MyThread (threading.Thread):
 def main():
     thread1 = MyThread(1, "Thread-1")
     thread1.start()
-
+    print("here")
     test_openCV()
 
 
