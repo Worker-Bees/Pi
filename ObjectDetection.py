@@ -36,8 +36,8 @@ def stackImages(scale, imgArray):
 
 
 def getContours(img):
-    imgContour = img.copy()
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    imgContour = imgGray.copy()
     imgBlur = cv2.GaussianBlur(imgGray, (5, 5), 1)
     imgCanny = cv2.Canny(imgBlur, 50, 50)
     contours, hierarchy = cv2.findContours(imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -49,7 +49,7 @@ def getContours(img):
             peri = cv2.arcLength(cnt, True)
             # print(peri)
             approx = cv2.approxPolyDP(cnt, 0.01 * peri, True)
-            print(len(approx))
+            # print(len(approx))
             objCor = len(approx)
             x, y, w, h = cv2.boundingRect(approx)
 
