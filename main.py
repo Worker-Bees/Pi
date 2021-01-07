@@ -17,11 +17,11 @@ sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 pi_address = ('192.168.1.135', 2345)
 def test_openCV():
     # Bind socket2 to server
-    sock2.bind(pi_address)
+    # sock2.bind(pi_address)
 
     cap = cv.VideoCapture(0)
-    # cap.set(3, 480)
-    # cap.set(4, 360)
+    cap.set(3, 480)
+    cap.set(4, 360)
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
@@ -36,22 +36,20 @@ def test_openCV():
         if cv.waitKey(1) == ord('q'):
             break
         frame_contours = ObjectDetection.getContours(frame)
+        line_thickness = 2
+        cv.line(frame_contours, (200, 480), (240, 380), (0, 255, 0), thickness=line_thickness)
+        cv.line(frame_contours, (440, 480), (400, 380), (0, 255, 0), thickness=line_thickness)
         reval, buffer = cv.imencode('.jpeg', frame_contours)
         encoded_string = base64.b64encode(buffer)
-        # image = encoded_string.decode('utf-8')
-        # socket_io.emit('image', image)
         temp = 0
-        sock.sendto(b'start', control_station_address)
+        # sock.sendto(b'start', control_station_address)
         while(len(encoded_string) - temp > 1024):
             sock.sendto(b'' + encoded_string[temp:temp+1024], control_station_address)
             temp = temp + 1024;
-        # sock.sendto(frame, server_address);
-        sock.sendto(b'' + encoded_string[temp:len(encoded_string)+1], control_station_address)
-        sock.sendto(b'finished', control_station_address)
-        # break;
-        # cv.imshow('frame', grayImage)
-        # i = i + 1
-        # if i == 100: break
+        # sock.sendto(b'' + encoded_string[temp:len(encoded_string)+1], control_station_address)
+        # sock.sendto(b'finished', control_station_address)
+
+        cv.imshow('frame', frame_contours)
 
     # When everything done, release the capture
     cap.release()
