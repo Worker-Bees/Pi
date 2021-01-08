@@ -6,7 +6,7 @@ import socket
 
 #socket for sending metadata
 sock_metadata = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address = ('192.168.137.254', 3333)
+control_station_address = ('192.168.137.1', 3333)
 ENCODER_1 = 27
 ENCODER_2 = 23
 encoder_1_pulses = 0
@@ -40,8 +40,12 @@ if __name__ == '__main__':
         # print(encoder_1_pulses)
         velocity_1 = 20.42 * (encoder_1_pulses / 347.0) * 10
         velocity_2 = 20.42 * (encoder_2_pulses / 347.0) * 10
-        velocity = velocity_1 + (velocity_2 - velocity_1) / 2
-        sock_metadata.sendto(b'velocity', control_station_address)
+        velocity = str(velocity_1 + (velocity_2 - velocity_1) / 2)
+        print(velocity)
+        encoder_1_pulses = 0
+        encoder_2_pulses = 0
+        sock_metadata.sendto(bytearray(velocity.encode()), control_station_address)
+
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.pause()
