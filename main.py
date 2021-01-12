@@ -1,12 +1,13 @@
 import numpy as np
 import cv2 as cv
 import os
+import sensor
 import socket
 import base64
 import serial
 import threading
 import ObjectDetection
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import time
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
@@ -20,12 +21,9 @@ sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 pi_address = ('192.168.137.254', 2345)
 # Bind socket2 to server
 sock2.bind(pi_address)
-detection_mode = False
 
-
-velocity = 1
-def live_stream():
-
+def live_stream(metadata_queue):
+    detection_mode = False
     cap = cv.VideoCapture(0)
     # cap.set(3, 480)
     # cap.set(4, 360)
@@ -42,6 +40,10 @@ def live_stream():
             break
         if cv.waitKey(1) == ord('q'):
             break
+
+        if not metadata_queue.empty():
+            detection_mode = metadata_queue.get_nowait()
+
         if detection_mode is True:
             frame_contours = ObjectDetection.getContours(frame)
             reval, buffer = cv.imencode('.jpeg', frame_contours)
@@ -56,6 +58,7 @@ def live_stream():
             temp = temp + 1024;
         sock.sendto(b'' + encoded_string[temp:len(encoded_string)+1], control_station_address)
         sock.sendto(b'finished', control_station_address)
+        time.sleep(0.03)
         # break;
         # cv.imshow('frame', grayImage)
         # i = i + 1
@@ -81,8 +84,12 @@ def receiveCommands():
 def main():
     manual_control_process = Process(target=receiveCommands, args=(''))
     manual_control_process.start()
-    live_stream()
+    metadata_queue = Queue()
+    sending_metadata_process = Process(target=sensor.send_metadata, args=(metadata_queue,))
+    sending_metadata_process.start()
+    live_stream(metadata_queue)
     manual_control_process.join()
+    sending_metadata_process.join()
 
 
 
