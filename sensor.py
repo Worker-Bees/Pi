@@ -76,7 +76,7 @@ def send_metadata(metadata_queue):
         x = math.cos(math.radians(heading)) * distance
         y = math.sin(math.radians(heading)) * distance
         # print(encoder_1_pulses, ' and ', encoder_2_pulses)
-        print("heading ", heading)
+        # print("heading ", heading)
         # print("x = ", distance, " ;  y = ", y)
         # print("heading: {:.2f} degrees".format(get_heading(sensor)))
         # print("velocity: ", velocity, " cm/s")

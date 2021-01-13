@@ -7,6 +7,7 @@ import base64
 import serial
 import threading
 import ObjectDetection
+import RPi.GPIO as GPIO
 from multiprocessing import Process, Queue
 import time
 # socket_io = socketio.Client()
@@ -72,13 +73,22 @@ def live_stream(metadata_queue):
 def receiveCommands():
     # Listen for key press
     print("Start manual control process")
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+    ser = serial.Serial('/dev/ttyACM1', 9600, timeout=1)
+    # GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(17, GPIO.OUT)
+    GPIO.output(17, GPIO.LOW)
     ser.flush()
     while True:
         ser.flush()
-        data, address = sock2.recvfrom(1)
-        print(data.decode())
-        ser.write(data)
+        data, address = sock2.recvfrom(10)
+        print(data)
+        if len(data) > 1:
+            print("here")
+            GPIO.output(17, GPIO.HIGH)
+            time.sleep(0.01)
+            GPIO.output(17, GPIO.LOW)
+            ser.write(b'x');
+        else: ser.write(data)
 
 
 def main():
