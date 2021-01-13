@@ -2,6 +2,7 @@ import sys
 import signal
 import RPi.GPIO as GPIO
 import time
+import math
 import socket
 
 #socket for sending metadata
@@ -23,20 +24,19 @@ import busio
 import adafruit_lsm303dlh_mag
 import math
 
-i2c = busio.I2C(board.SCL, board.SDA)
-sensor = adafruit_lsm303dlh_mag.LSM303DLH_Mag(i2c)
-x_offset, y_offset, _ = sensor.magnetic
+# i2c = busio.I2C(board.SCL, board.SDA)
+# sensor = adafruit_lsm303dlh_mag.LSM303DLH_Mag(i2c)
 
 def vector_2_degrees(x, y):
-    # az = 90 - atan(y / x) * 180 / pi
-    angle = degrees (atan2(y, x))
+    angle = degrees(atan2(y, x))
     if angle < 0:
         angle += 360
-    return degrees(atan2(y,x))
+    return angle
 
 
 def get_heading(_sensor):
     magnet_x, magnet_y, _ = _sensor.magnetic
+    # print(magnet_x, ' and ', magnet_y, ' and ', magnet_z)
     return vector_2_degrees(magnet_x, magnet_y)
 
 def signal_handler(sig, frame):
@@ -62,7 +62,7 @@ def send_metadata(metadata_queue):
     GPIO.setup(ENCODER_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(ENCODER_2, GPIO.FALLING,
                           callback=encoder_2_pulse_detection_handler)
-    offset = get_heading(sensor)
+    # offset = get_heading(sensor)
     distance = 0
     while True:
         time.sleep(0.1)
@@ -72,13 +72,13 @@ def send_metadata(metadata_queue):
         # distance = distance + abs(encoder_1_pulses * 20.42 / 374.0)
         distance = distance + abs((encoder_1_pulses * 20.42 / 374) + (encoder_1_pulses * 20.42 / 374  - encoder_2_pulses * 20.42 / 374) / 2)
         velocity = str(velocity_1 + (velocity_2 - velocity_1) / 2)
-        heading = get_heading(sensor) - offset
-        x = math.cos(math.radians(heading)) * distance
-        y = math.sin(math.radians(heading)) * distance
+        # heading = get_heading(sensor) - offset
+        # x = math.cos(math.radians(heading)) * distance
+        # y = math.sin(math.radians(heading)) * distance
         # print(encoder_1_pulses, ' and ', encoder_2_pulses)
         # print("heading ", heading)
         # print("x = ", distance, " ;  y = ", y)
-        # print("heading: {:.2f} degrees".format(get_heading(sensor)))
+        # print("heading: {:.2f} degrees".format(heading))
         # print("velocity: ", velocity, " cm/s")
         sock_metadata.sendto(bytearray(velocity.encode()), control_station_address)
         encoder_1_pulses = 0

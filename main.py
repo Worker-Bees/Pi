@@ -73,7 +73,7 @@ def live_stream(metadata_queue):
 def receiveCommands():
     # Listen for key press
     print("Start manual control process")
-    ser = serial.Serial('/dev/ttyACM1', 9600, timeout=1)
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
     # GPIO.setmode(GPIO.BOARD)
     GPIO.setup(17, GPIO.OUT)
     GPIO.output(17, GPIO.LOW)
@@ -81,13 +81,12 @@ def receiveCommands():
     while True:
         ser.flush()
         data, address = sock2.recvfrom(10)
-        print(data)
         if len(data) > 1:
-            print("here")
             GPIO.output(17, GPIO.HIGH)
             time.sleep(0.01)
             GPIO.output(17, GPIO.LOW)
             ser.write(b'x');
+            if (data == b'auto'): ser.write(b'm');
         else: ser.write(data)
 
 
