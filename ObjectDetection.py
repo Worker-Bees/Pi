@@ -38,8 +38,8 @@ def stackImages(scale, imgArray):
 def getContours(img):
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     imgContour = imgGray.copy()
-    imgBlur = cv2.GaussianBlur(imgGray, (5, 5), 1)
-    imgCanny = cv2.Canny(imgBlur, 50, 50)
+    imgBlur = cv2.GaussianBlur(imgGray, (7, 7), 1)
+    imgCanny = cv2.Canny(imgBlur, 80, 80)
     contours, hierarchy = cv2.findContours(imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     for cnt in contours:
         area = cv2.contourArea(cnt)
@@ -48,23 +48,40 @@ def getContours(img):
             cv2.drawContours(imgContour, cnt, -1, (255, 0, 0), 3)
             peri = cv2.arcLength(cnt, True)
             # print(peri)
-            approx = cv2.approxPolyDP(cnt, 0.01 * peri, True)
+            approx = cv2.approxPolyDP(cnt, 0.009 * peri, True)
             # print(len(approx))
             objCor = len(approx)
-            x, y, w, h = cv2.boundingRect(approx)
-
-            if objCor >= 14:
+            # 19 - 22 -> cylinder -> 14 - 16
+            print(objCor)
+            if objCor >= 13 and objCor <= 20:
                 objectType = "Sphere"
-            elif objCor <= 7:
+            elif objCor <= 7 and objCor >= 4:
                 objectType = "Cuboid"
-            elif objCor > 9 and objCor < 12:
+            elif objCor >= 8 and objCor <= 11:
                 objectType = "Cylinder"
             else:
                 objectType = "None"
 
             if objectType != "None":
+                x, y, w, h = cv2.boundingRect(approx)
                 cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 cv2.putText(imgContour, objectType,
                         (x + (w // 2) - 10, y + (h // 2) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7,
                         (0, 0, 0), 2)
+        elif not cv2.isContourConvex(cnt):
+            cv2.drawContours(imgContour, cnt, -1, (255, 0, 0), 3)
+            peri = cv2.arcLength(cnt, True)
+            # print(peri)
+            approx = cv2.approxPolyDP(cnt, 0.009 * peri, True)
+            # print(len(approx))
+            objCor = len(approx)
+            print(objCor)
+            # 19 - 22 -> cylinder -> 14 - 16
+            if objCor >= 15 and objCor < 18:
+                x, y, w, h = cv2.boundingRect(approx)
+                cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(imgContour, "Sphere",
+                            (x + (w // 2) - 10, y + (h // 2) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7,
+                            (0, 0, 0), 2)
+
     return imgContour
