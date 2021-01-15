@@ -7,7 +7,7 @@ import socket
 
 #socket for sending metadata
 sock_metadata = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address_metadata = ('192.168.2.14', 3333)
+control_station_address_metadata = ('192.168.137.1', 3333)
 ENCODER_1 = 22
 ENCODER_2 = 23
 encoder_1_pulses = 0
@@ -33,6 +33,8 @@ x_velocity = 0
 x_current_acc = 0
 gyro_start_time = time.time()
 coordinates_start_time = time.time()
+z_offset = 0
+velocity_start_time = time.time()
 
 def calculate_coordinates():
     global x_coordinate
@@ -41,15 +43,18 @@ def calculate_coordinates():
     global angle
     global x_velocity
     global x_current_acc
+    global z_offset
     try:
         x_acc, y_acc, z_acc = mpu.acceleration
-        x_acc -= 0.5
+        x_acc -= z_offset
         # print(x_acc)
-        if abs(x_acc) < 0.4: x_acc = 0
+        # if abs(x_acc) < 0.4: x_acc = 0
+        # print(x_acc)
         interval = coordinates_start_time - time.time()
         x_coordinate = x_coordinate + (x_velocity * interval) + (0.5 * x_current_acc * interval * interval)
         y_coordinate = x_coordinate * math.tan(math.radians(angle))
         # print(encoder_1_pulses, " and -- ", encoder_2_pulses)
+        # print(angle)
         if encoder_1_pulses > 10  and encoder_2_pulses > 10:
             x_velocity = x_velocity + x_current_acc * interval
             # print(x_velocity)
@@ -65,11 +70,16 @@ def calculate_coordinates():
 def calculate_heading():
     global angle
     global gyro_start_time
+    global z_offset
     try:
         x, y, z = mpu.gyro
         # print("y_acc = ", y)
-        if abs(z) < 10:  z = 0
-        angle = angle + z * (gyro_start_time - time.time())
+        z = z - z_offset
+        # print('z = ', z)
+        if abs(z) < 5 :  z = 0
+        angle = angle - z * (gyro_start_time - time.time())
+        if angle > 360: angle = angle - 360
+        if angle < -360: angle = angle + 360
         gyro_start_time = time.time()
     except IOError:
         pass
@@ -89,9 +99,25 @@ def encoder_2_pulse_detection_handler(gpio_number):
 def mpu_trip(gpio_number):
     print("trigger")
 
+def calibrate_gyro():
+    try :
+        global z_offset
+        global mpu
+        total_z_degree = 0
+        for i in range(1, 1000):
+            _, _ , z_degree = mpu.gyro
+            total_z_degree += z_degree
+        z_offset = total_z_degree / 1000
+    except IOError:
+        calibrate_gyro()
+
+
 def send_metadata(metadata_queue):
     global encoder_1_pulses
     global encoder_2_pulses
+    global x_coordinate
+    global y_coordinate
+    global velocity_start_time
     GPIO.setmode(GPIO.BCM)
 
     GPIO.setup(ENCODER_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -102,29 +128,38 @@ def send_metadata(metadata_queue):
                           callback=encoder_2_pulse_detection_handler)
     GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(27, GPIO.FALLING, callback=mpu_trip)
+    GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
     # offset = get_heading(sensor)
     # distance = 0
+    time.sleep(3)
+    calibrate_gyro()
+    velocity = 0
     while True:
-        encoder_1_pulses = 0
-        encoder_2_pulses = 0
         time.sleep(0.1)
+
         calculate_heading()
-        calculate_coordinates()
-        velocity = x_velocity / math.cos(math.radians(angle))
-        # heading = get_heading(sensor) - offset
-        # x = str(math.cos(math.radians(angle)) * distance)
-        # y = str(math.sin(math.radians(angle)) * distance)
-        print('x = ', x_coordinate , 'y = ', y_coordinate)
-        # print(encoder_1_pulses, ' and ', encoder_2_pulses)
-        # print("heading ", heading)
-        # print("x = ", distance, " ;  y = ", y)
-        # print("heading: {:.2f} degrees".format(heading))
-        # print("velocity: ", velocity, " cm/s")
-        # print('angle = ', angle)
-        sock_metadata.sendto(b'start', control_station_address_metadata)
-        sock_metadata.sendto(bytearray(str(velocity).encode()), control_station_address_metadata)
-        sock_metadata.sendto(bytearray(str(x_coordinate).encode()), control_station_address_metadata)
-        sock_metadata.sendto(bytearray(str(y_coordinate).encode()), control_station_address_metadata)
+        # calculate_coordinates()
+        time_interval = time.time() - velocity_start_time
+        distance = velocity * time_interval
+        velocity_1 = (GPIO.input(16) - GPIO.input(20)) * (encoder_1_pulses * 20.42 * (1 / time_interval) / 374.0)
+        encoder_1_pulses = 0
+        velocity_2 = (GPIO.input(19) - GPIO.input(26)) * (encoder_2_pulses * 20.42 * (1 / time_interval) / 374.0)
+        encoder_2_pulses = 0
+        velocity_start_time = time.time()
+        velocity = velocity_1 + (velocity_2 - velocity_1) / 2
+
+        x_coordinate = x_coordinate + distance * math.cos(math.radians(angle))
+        y_coordinate = y_coordinate + distance * math.sin(math.radians(angle))
+        print('angle = ', angle)
+        print('x = ', x_coordinate, 'y = ', y_coordinate)
+        sock_metadata.sendto(b'v='+bytearray(str(round(velocity,2)).encode()), control_station_address_metadata)
+        sock_metadata.sendto(b'a='+bytearray(str(round(angle, 2)).encode()), control_station_address_metadata)
+        sock_metadata.sendto(b'x='+bytearray(str(round(x_coordinate, 2)).encode()), control_station_address_metadata)
+        sock_metadata.sendto(b'y='+bytearray(str(round(y_coordinate, 2)).encode()), control_station_address_metadata)
 
 
 

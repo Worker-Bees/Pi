@@ -13,18 +13,18 @@ import time
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address = ('192.168.2.14', 2711)
+control_station_address = ('192.168.137.1', 2711)
 
 
 
 # Create new socket to listen to key press from JavaFX
 sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-pi_address = ('192.168.2.15', 2345)
+pi_address = ('192.168.137.254', 2345)
 # Bind socket2 to server
 sock2.bind(pi_address)
 
 def live_stream(metadata_queue):
-    detection_mode = True
+    detection_mode = False
     cap = cv.VideoCapture(0)
     cap.set(10, 150)
     # cap.set(3, 480)
