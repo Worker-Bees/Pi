@@ -76,7 +76,7 @@ def calculate_heading():
         # print("y_acc = ", y)
         z = z - z_offset
         # print('z = ', z)
-        if abs(z) < 5 :  z = 0
+        if abs(z) < 4 :  z = 0
         angle = angle - z * (gyro_start_time - time.time())
         if angle > 360: angle = angle - 360
         if angle < -360: angle = angle + 360
@@ -112,7 +112,7 @@ def calibrate_gyro():
         calibrate_gyro()
 
 
-def send_metadata(metadata_queue):
+def send_metadata(location_queue):
     global encoder_1_pulses
     global encoder_2_pulses
     global x_coordinate
@@ -154,13 +154,14 @@ def send_metadata(metadata_queue):
 
         x_coordinate = x_coordinate + distance * math.cos(math.radians(angle))
         y_coordinate = y_coordinate + distance * math.sin(math.radians(angle))
-        print('angle = ', angle)
-        print('x = ', x_coordinate, 'y = ', y_coordinate)
+        # print('angle = ', angle)
+        # print('x = ', x_coordinate, 'y = ', y_coordinate)
         sock_metadata.sendto(b'v='+bytearray(str(round(velocity,2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'a='+bytearray(str(round(angle, 2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'x='+bytearray(str(round(x_coordinate, 2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'y='+bytearray(str(round(y_coordinate, 2)).encode()), control_station_address_metadata)
-
+        if angle > 160 and angle < 190 and x_coordinate > 130 and x_coordinate < 160 and y_coordinate > 90 and y_coordinate < 130:
+            location_queue.put(True)
 
 
     signal.signal(signal.SIGINT, signal_handler)

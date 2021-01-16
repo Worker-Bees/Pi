@@ -19,11 +19,11 @@ control_station_address = ('192.168.137.1', 2711)
 
 # Create new socket to listen to key press from JavaFX
 sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-pi_address = ('192.168.137.254', 2345)
+pi_address = ('192.168.137.104', 2345)
 # Bind socket2 to server
 sock2.bind(pi_address)
 
-def live_stream(metadata_queue):
+def live_stream(mode_queue):
     detection_mode = False
     cap = cv.VideoCapture(0)
     cap.set(10, 150)
@@ -43,8 +43,8 @@ def live_stream(metadata_queue):
         if cv.waitKey(1) == ord('q'):
             break
 
-        if not metadata_queue.empty():
-            detection_mode = metadata_queue.get_nowait()
+        if not mode_queue.empty():
+            detection_mode = mode_queue.get_nowait()
 
         if detection_mode is True:
             frame_contours = ObjectDetection.getContours(frame)
@@ -60,7 +60,7 @@ def live_stream(metadata_queue):
             temp = temp + 1024;
         sock.sendto(b'' + encoded_string[temp:len(encoded_string)+1], control_station_address)
         sock.sendto(b'finished', control_station_address)
-        time.sleep(0.03)
+        time.sleep(0.01)
         # break;
         # cv.imshow('frame', grayImage)
         # i = i + 1
@@ -71,7 +71,7 @@ def live_stream(metadata_queue):
     cv.destroyAllWindows()
 
 
-def receiveCommands():
+def receiveCommands(location_queue, mode_queue):
     # Listen for key press
     print("Start manual control process")
     ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
@@ -79,25 +79,50 @@ def receiveCommands():
     GPIO.setup(17, GPIO.OUT)
     GPIO.output(17, GPIO.LOW)
     ser.flush()
+    manual_mode = True
+    sock2.setblocking(False)
+    data = b''
+    #trigger manual mode for testing, remomve later
+    time.sleep(5)
+    GPIO.output(17, GPIO.HIGH)
+    time.sleep(0.01)
+    GPIO.output(17, GPIO.LOW)
+    ser.write(b'x');
+    ##--------------------------
     while True:
+        data = b'/'
         ser.flush()
-        data, address = sock2.recvfrom(10)
-        if len(data) > 1:
-            GPIO.output(17, GPIO.HIGH)
-            time.sleep(0.01)
-            GPIO.output(17, GPIO.LOW)
-            ser.write(b'x');
-            if (data == b'auto'): ser.write(b'm');
-        else: ser.write(data)
+        try:
+            data, address = sock2.recvfrom(10)
+        except IOError:
+            pass
+        if not location_queue.empty():
+            gate_location = location_queue.get_nowait()
+            if gate_location == True:
+                GPIO.output(17, GPIO.HIGH)
+                time.sleep(0.01)
+                GPIO.output(17, GPIO.LOW)
+                ser.write(b'x');
 
 
+
+            # mode_queue.put(True)
+        if data == b'manual':
+            manual_mode = True
+            # mode_queue.put(False)
+        elif manual_mode and len(data) == 1 and data != b'/':
+            print("data = ", data.decode())
+            ser.write(data)
+        # print("gate_location = ", gate_location)
+        # print("manual_mode = ", manual_mode)
 def main():
-    manual_control_process = Process(target=receiveCommands, args=(''))
+    mode_queue = Queue()
+    location_queue = Queue()
+    manual_control_process = Process(target=receiveCommands, args=(location_queue, mode_queue, ))
     manual_control_process.start()
-    metadata_queue = Queue()
-    sending_metadata_process = Process(target=sensor.send_metadata, args=(metadata_queue,))
+    sending_metadata_process = Process(target=sensor.send_metadata, args=(location_queue,))
     sending_metadata_process.start()
-    live_stream(metadata_queue)
+    live_stream(mode_queue)
     manual_control_process.join()
     sending_metadata_process.join()
 
