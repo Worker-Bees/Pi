@@ -138,6 +138,7 @@ def send_metadata(location_queue):
     time.sleep(3)
     calibrate_gyro()
     velocity = 0
+    gate_zone_x = 999
     while True:
         time.sleep(0.1)
 
@@ -160,8 +161,12 @@ def send_metadata(location_queue):
         sock_metadata.sendto(b'a='+bytearray(str(round(angle, 2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'x='+bytearray(str(round(x_coordinate, 2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'y='+bytearray(str(round(y_coordinate, 2)).encode()), control_station_address_metadata)
-        if angle > 160 and angle < 190 and x_coordinate > 130 and x_coordinate < 160 and y_coordinate > 90 and y_coordinate < 130:
-            location_queue.put(True)
+        # if angle > 160 and angle < 190 and x_coordinate > 130 and x_coordinate < 160 and y_coordinate > 90 and y_coordinate < 130:
+        if angle > -30 and angle < 30 and x_coordinate > 40 and x_coordinate < 70 and y_coordinate > -20 and y_coordinate < 20:
+            if location_queue.empty(): location_queue.put("GATE_ZONE")
+        if angle > -30 and angle < 30 and x_coordinate > 80 and y_coordinate > -20 and y_coordinate < 20:
+            if location_queue.empty(): location_queue.put("PALLET_ZONE")
+
 
 
     signal.signal(signal.SIGINT, signal_handler)

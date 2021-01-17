@@ -79,42 +79,48 @@ def receiveCommands(location_queue, mode_queue):
     GPIO.setup(17, GPIO.OUT)
     GPIO.output(17, GPIO.LOW)
     ser.flush()
-    manual_mode = True
+    manual_mode = False
     sock2.setblocking(False)
     data = b''
-    #trigger manual mode for testing, remomve later
-    time.sleep(5)
-    GPIO.output(17, GPIO.HIGH)
-    time.sleep(0.01)
-    GPIO.output(17, GPIO.LOW)
-    ser.write(b'x');
+    # trigger manual mode for testing, remomve later
+    # time.sleep(3)
+    # GPIO.output(17, GPIO.HIGH)
+    # time.sleep(0.01)
+    # GPIO.output(17, GPIO.LOW)
+    # ser.write(b'x');
     ##--------------------------
     while True:
         data = b'/'
-        ser.flush()
         try:
             data, address = sock2.recvfrom(10)
         except IOError:
             pass
-        if not location_queue.empty():
-            gate_location = location_queue.get_nowait()
-            if gate_location == True:
+
+        if manual_mode == False and not location_queue.empty():
+            location_info = location_queue.get_nowait()
+            if location_info == "GATE_ZONE":
                 GPIO.output(17, GPIO.HIGH)
                 time.sleep(0.01)
                 GPIO.output(17, GPIO.LOW)
-                ser.write(b'x');
+                print("here" , location_info)
+            elif location_info == "PALLET_ZONE":
+                print("here2")
+                ser.write(b'o')
+                ser.write(b'o')
+                ser.write(b'o')
+                mode_queue.put(True)
 
-
-
-            # mode_queue.put(True)
         if data == b'manual':
             manual_mode = True
-            # mode_queue.put(False)
-        elif manual_mode and len(data) == 1 and data != b'/':
-            print("data = ", data.decode())
+            mode_queue.put(False)
+            ser.write(b'!')
+            ser.write(b'!')
+            ser.write(b'!')
+            ser.write(b'!')
+        elif manual_mode == True and len(data) == 1 and data != b'/':
+            print(data)
+            ser.flush()
             ser.write(data)
-        # print("gate_location = ", gate_location)
-        # print("manual_mode = ", manual_mode)
 def main():
     mode_queue = Queue()
     location_queue = Queue()
