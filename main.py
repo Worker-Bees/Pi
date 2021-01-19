@@ -13,13 +13,13 @@ import time
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address = ('192.168.137.1', 2711)
+control_station_address = ('10.0.0.102', 2711)
 
 
 
 # Create new socket to listen to key press from JavaFX
 sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-pi_address = ('192.168.137.104', 2345)
+pi_address = ('10.0.0.101', 2345)
 # Bind socket2 to server
 sock2.bind(pi_address)
 
@@ -73,8 +73,8 @@ def live_stream(mode_queue):
 
 def receiveCommands(location_queue, mode_queue):
     # Listen for key press
-    print("Start manual control process")
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+    print("Start commanding process")
+    ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=1)
     # GPIO.setmode(GPIO.BOARD)
     GPIO.setup(17, GPIO.OUT)
     GPIO.output(17, GPIO.LOW)
@@ -83,14 +83,14 @@ def receiveCommands(location_queue, mode_queue):
     sock2.setblocking(False)
     data = b''
     # trigger manual mode for testing, remomve later
-    # time.sleep(3)
-    # GPIO.output(17, GPIO.HIGH)
-    # time.sleep(0.01)
-    # GPIO.output(17, GPIO.LOW)
-    # ser.write(b'x');
     ##--------------------------
     while True:
         data = b'/'
+        # try:
+        #     print(ser.read())
+        # except UnicodeDecodeError:
+        #     pass
+
         try:
             data, address = sock2.recvfrom(10)
         except IOError:
@@ -99,9 +99,8 @@ def receiveCommands(location_queue, mode_queue):
         if manual_mode == False and not location_queue.empty():
             location_info = location_queue.get_nowait()
             if location_info == "GATE_ZONE":
-                GPIO.output(17, GPIO.HIGH)
-                time.sleep(0.01)
-                GPIO.output(17, GPIO.LOW)
+                change_mode()
+                # change_mode()
                 print("here" , location_info)
             elif location_info == "PALLET_ZONE":
                 print("here2")
@@ -113,15 +112,19 @@ def receiveCommands(location_queue, mode_queue):
         if data == b'manual':
             manual_mode = True
             mode_queue.put(False)
-            ser.write(b'!')
-            ser.write(b'!')
-            ser.write(b'!')
-            ser.write(b'!')
+            change_mode()
+
         elif manual_mode == True and len(data) == 1 and data != b'/':
             print(data)
-            ser.flush()
             ser.write(data)
+
+def change_mode():
+    GPIO.output(17, GPIO.HIGH)
+    time.sleep(0.01)
+    GPIO.output(17, GPIO.LOW)
+
 def main():
+    # print("gere")
     mode_queue = Queue()
     location_queue = Queue()
     manual_control_process = Process(target=receiveCommands, args=(location_queue, mode_queue, ))

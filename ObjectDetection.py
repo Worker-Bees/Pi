@@ -52,7 +52,7 @@ def getContours(img):
             # print(len(approx))
             objCor = len(approx)
             # 19 - 22 -> cylinder -> 14 - 16
-            print(objCor)
+            # print(objCor)
             if objCor >= 13 and objCor <= 20:
                 objectType = "Sphere"
             elif objCor <= 7 and objCor >= 4:
@@ -75,7 +75,7 @@ def getContours(img):
             approx = cv2.approxPolyDP(cnt, 0.009 * peri, True)
             # print(len(approx))
             objCor = len(approx)
-            print(objCor)
+            # print(objCor)
             # 19 - 22 -> cylinder -> 14 - 16
             if objCor >= 15 and objCor < 18:
                 x, y, w, h = cv2.boundingRect(approx)

@@ -7,7 +7,7 @@ import socket
 
 #socket for sending metadata
 sock_metadata = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address_metadata = ('192.168.137.1', 3333)
+control_station_address_metadata = ('10.0.0.102', 3333);
 ENCODER_1 = 22
 ENCODER_2 = 23
 encoder_1_pulses = 0
@@ -132,16 +132,15 @@ def send_metadata(location_queue):
     GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
     # offset = get_heading(sensor)
     # distance = 0
     time.sleep(3)
     calibrate_gyro()
     velocity = 0
     gate_zone_x = 999
+    zone = None
     while True:
         time.sleep(0.1)
-
         calculate_heading()
         # calculate_coordinates()
         time_interval = time.time() - velocity_start_time
@@ -155,20 +154,26 @@ def send_metadata(location_queue):
 
         x_coordinate = x_coordinate + distance * math.cos(math.radians(angle))
         y_coordinate = y_coordinate + distance * math.sin(math.radians(angle))
-        # print('angle = ', angle)
-        # print('x = ', x_coordinate, 'y = ', y_coordinate)
+        print('angle = ', angle)
+        print('x = ', x_coordinate, 'y = ', y_coordinate)
         sock_metadata.sendto(b'v='+bytearray(str(round(velocity,2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'a='+bytearray(str(round(angle, 2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'x='+bytearray(str(round(x_coordinate, 2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'y='+bytearray(str(round(y_coordinate, 2)).encode()), control_station_address_metadata)
         # if angle > 160 and angle < 190 and x_coordinate > 130 and x_coordinate < 160 and y_coordinate > 90 and y_coordinate < 130:
-        if angle > -30 and angle < 30 and x_coordinate > 40 and x_coordinate < 70 and y_coordinate > -20 and y_coordinate < 20:
+        if zone == "GATE ZONE":
+           gate_zone_x = x_coordinate
+        elif zone == None and angle > 165 and angle < 205 and x_coordinate < 240:
+            zone = "GATE_ZONE"
+            gate_zone_x = x_coordinate
             if location_queue.empty(): location_queue.put("GATE_ZONE")
-        if angle > -30 and angle < 30 and x_coordinate > 80 and y_coordinate > -20 and y_coordinate < 20:
+        elif zone == "GATE_ZONE" and angle > 165 and angle < 205 and x_coordinate < (gate_zone_x - 50) and y_coordinate > 100:
+            zone = "PALLET_ZONE"
             if location_queue.empty(): location_queue.put("PALLET_ZONE")
 
 
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.pause()
+
 
