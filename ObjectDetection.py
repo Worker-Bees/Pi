@@ -44,7 +44,7 @@ def getContours(img):
     for cnt in contours:
         area = cv2.contourArea(cnt)
         # print(area)
-        if area > 500:
+        if area > 1500:
             cv2.drawContours(imgContour, cnt, -1, (255, 0, 0), 3)
             peri = cv2.arcLength(cnt, True)
             # print(peri)
@@ -72,16 +72,19 @@ def getContours(img):
             cv2.drawContours(imgContour, cnt, -1, (255, 0, 0), 3)
             peri = cv2.arcLength(cnt, True)
             # print(peri)
-            approx = cv2.approxPolyDP(cnt, 0.009 * peri, True)
-            # print(len(approx))
-            objCor = len(approx)
-            # print(objCor)
-            # 19 - 22 -> cylinder -> 14 - 16
-            if objCor >= 15 and objCor < 18:
-                x, y, w, h = cv2.boundingRect(approx)
-                cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(imgContour, "Sphere",
-                            (x + (w // 2) - 10, y + (h // 2) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7,
-                            (0, 0, 0), 2)
+            if peri > 400:
+                # print(peri)
+                approx = cv2.approxPolyDP(cnt, 0.009 * peri, True)
+                # print(len(approx))
+                objCor = len(approx)
+                # print(objCor)
+                # 19 - 22 -> cylinder -> 14 - 16
+                if objCor >= 15 and objCor < 18:
+                    x, y, w, h = cv2.boundingRect(approx)
+                    if w * h > 1200:
+                        cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        cv2.putText(imgContour, "Sphere",
+                                    (x + (w // 2) - 10, y + (h // 2) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7,
+                                    (0, 0, 0), 2)
 
     return imgContour

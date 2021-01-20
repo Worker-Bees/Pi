@@ -13,18 +13,18 @@ import time
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address = ('10.0.0.102', 2711)
+control_station_address = ('10.247.169.53', 2711)
 
 
 
 # Create new socket to listen to key press from JavaFX
 sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-pi_address = ('10.0.0.101', 2345)
+pi_address = ('10.247.169.49', 2345)
 # Bind socket2 to server
 sock2.bind(pi_address)
 
 def live_stream(mode_queue):
-    detection_mode = False
+    detection_mode = True
     cap = cv.VideoCapture(0)
     cap.set(10, 150)
     # cap.set(3, 480)
@@ -100,13 +100,8 @@ def receiveCommands(location_queue, mode_queue):
             location_info = location_queue.get_nowait()
             if location_info == "GATE_ZONE":
                 change_mode()
-                # change_mode()
-                print("here" , location_info)
             elif location_info == "PALLET_ZONE":
-                print("here2")
-                ser.write(b'o')
-                ser.write(b'o')
-                ser.write(b'o')
+                change_mode()
                 mode_queue.put(True)
 
         if data == b'manual':
