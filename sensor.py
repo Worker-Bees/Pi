@@ -7,7 +7,7 @@ import socket
 
 #socket for sending metadata
 sock_metadata = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address_metadata = ('10.0.0.102', 3333)
+control_station_address_metadata = ('10.0.0.104', 3333)
 ENCODER_1 = 22
 ENCODER_2 = 23
 encoder_1_pulses = 0
@@ -154,8 +154,8 @@ def send_metadata(location_queue):
 
         x_coordinate = x_coordinate + distance * math.cos(math.radians(angle))
         y_coordinate = y_coordinate + distance * math.sin(math.radians(angle))
-        print('angle = ', angle)
-        print('x = ', x_coordinate, 'y = ', y_coordinate)
+        # print('angle = ', angle)
+        # print('x = ', x_coordinate, 'y = ', y_coordinate)
         sock_metadata.sendto(b'v='+bytearray(str(round(velocity,2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'a='+bytearray(str(round(angle, 2)).encode()), control_station_address_metadata)
         sock_metadata.sendto(b'x='+bytearray(str(round(x_coordinate, 2)).encode()), control_station_address_metadata)

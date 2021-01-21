@@ -13,13 +13,13 @@ import time
 # socket_io = socketio.Client()
 # socket_io.connect('http://192.168.1.5:8000')
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-control_station_address = ('10.0.0.102', 2711)
+control_station_address = ('10.0.0.104', 2711)
 
 
 
 # Create new socket to listen to key press from JavaFX
 sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-pi_address = ('10.0.0.101', 2345)
+pi_address = ('10.0.0.103', 2345)
 # Bind socket2 to server
 sock2.bind(pi_address)
 
@@ -79,7 +79,7 @@ def receiveCommands(location_queue, mode_queue):
     GPIO.setup(17, GPIO.OUT)
     GPIO.output(17, GPIO.LOW)
     ser.flush()
-    manual_mode = False
+    manual_mode = True
     sock2.setblocking(False)
     data = b''
     # trigger manual mode for testing, remomve later
@@ -110,6 +110,7 @@ def receiveCommands(location_queue, mode_queue):
             change_mode()
 
         elif data == b'start':
+            manual_mode = False
             change_mode()
 
         elif manual_mode == True and len(data) == 1 and data != b'/':
