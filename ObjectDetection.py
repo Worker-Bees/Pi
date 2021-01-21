@@ -74,16 +74,26 @@ def getContours(img):
             # print(peri)
             if peri > 400:
                 # print(peri)
-                approx = cv2.approxPolyDP(cnt, 0.009 * peri, True)
+                approx = cv2.approxPolyDP(cnt, 0.005 * peri, True)
                 # print(len(approx))
                 objCor = len(approx)
                 # print(objCor)
+
                 # 19 - 22 -> cylinder -> 14 - 16
-                if objCor >= 15 and objCor < 18:
+                if objCor > 22 and objCor < 28:
+                    objectType = 'Sphere'
+                elif objCor > 17 and objCor < 21:
+                    objectType = 'Cylinder'
+                elif objCor >= 12 and objCor <= 14:
+                    objectType = 'Cuboid'
+                else: objectType = 'None'
+
+                if objectType != 'None':
                     x, y, w, h = cv2.boundingRect(approx)
-                    if w * h > 1200:
+                    # print(w*h)
+                    if w * h > 10000:
                         cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                        cv2.putText(imgContour, "Sphere",
+                        cv2.putText(imgContour, objectType,
                                     (x + (w // 2) - 10, y + (h // 2) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7,
                                     (0, 0, 0), 2)
 
